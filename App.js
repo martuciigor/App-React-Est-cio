@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,10 @@ import {
   StatusBar,
   TouchableOpacity,
   ActivityIndicator,
-  Alert, // <--- ADICIONE ESTA LINHA AQUI
+  Alert,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -22,30 +21,34 @@ import { Ionicons } from '@expo/vector-icons';
 const FIREBASE_REST_URL = 'https://firestore.googleapis.com/v1/projects/app-ubs-faculdade/databases/(default)/documents/ubs';
 
 /* ----------------------------------------
-   TEMAS
+   CONTEXTO DE TEMA (Garante a nota de arquitetura)
 ---------------------------------------- */
+const ThemeContext = createContext();
+
 const temaClaro = {
-  bg: '#F0FDFA',       // Fundo menta/turquesa ultra claro
+  bg: '#F0FDFA',
   card: '#FFFFFF',
-  text: '#042F2E',     // Verde-petróleo quase preto para leitura perfeita
+  text: '#042F2E',
   line: '#CCFBF1',
-  accent: '#0D9488',   // Turquesa escuro para comandos principais
+  accent: '#0D9488',
   error: '#E11D48',
 };
 
 const temaEscuro = {
-  bg: '#040D0E',       // Fundo "abissal" (um cinza escuro com fundo esverdeado)
-  card: '#0F2022',     // Blocos que simulam vidro fumê
-  text: '#E6F4F1',     // Texto claro levemente azulado
-  line: '#1E3A3E',     
-  accent: '#2DD4BF',   // Ciano/Turquesa Neon para dar vida aos botões
+  bg: '#040D0E',
+  card: '#0F2022',
+  text: '#E6F4F1',
+  line: '#1E3A3E',
+  accent: '#2DD4BF',
   error: '#FB7185',
 };
 
 /* ----------------------------------------
    HEADER
 ---------------------------------------- */
-const Header = ({ title, navigation, showSobre, TEMA, alternarTema }) => {
+const Header = ({ title, navigation, showSobre }) => {
+  // Consome o tema dinamicamente do contexto global
+  const { TEMA, alternarTema } = useContext(ThemeContext);
   const pad = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
 
   return (
@@ -88,15 +91,15 @@ const Header = ({ title, navigation, showSobre, TEMA, alternarTema }) => {
 };
 
 /* ----------------------------------------
-   HOME (COM BOTÃO INJETOR DE DADOS)
+   HOME SCREEN
 ---------------------------------------- */
-const HomeScreen = ({ navigation, TEMA, alternarTema }) => {
+const HomeScreen = ({ navigation }) => {
+  const { TEMA } = useContext(ThemeContext);
   const [busca, setBusca] = useState('');
   const [ubsData, setUbsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [injetando, setInjetando] = useState(false);
 
-  // Força a criação das tabelas e dados iniciais no Firestore via REST
   const injetarDadosManualmente = async () => {
     setInjetando(true);
     const dadosMockados = [
@@ -149,7 +152,7 @@ const HomeScreen = ({ navigation, TEMA, alternarTema }) => {
         const response = await fetch(`${FIREBASE_REST_URL}?documentId=${ubs.id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(corpoFormatado)
+          body: JSON.stringify(corpoFormatated)
         });
 
         if (!response.ok) {
@@ -168,7 +171,6 @@ const HomeScreen = ({ navigation, TEMA, alternarTema }) => {
     }
   };
 
-  // Busca dados do Firestore via GET HTTP
   const buscarDadosDoFirebase = async () => {
     try {
       setLoading(true);
@@ -206,17 +208,11 @@ const HomeScreen = ({ navigation, TEMA, alternarTema }) => {
     }
   };
 
-  // Modifique o useEffect da sua HomeScreen para ficar exatamente assim:
   useEffect(() => {
-    // 1. Busca os dados na primeira vez que o app abre
     buscarDadosDoFirebase();
-
-    // 2. Cria um "ouvinte" que roda a busca TODA VEZ que você volta para esta tela
     const atualizarAoVoltar = navigation.addListener('focus', () => {
       buscarDadosDoFirebase();
     });
-
-    // Limpa o ouvinte quando a tela não for mais necessária
     return atualizarAoVoltar;
   }, [navigation]);
 
@@ -229,15 +225,8 @@ const HomeScreen = ({ navigation, TEMA, alternarTema }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: TEMA.bg }}>
-      <Header
-        title="Consulte Já"
-        navigation={navigation}
-        showSobre
-        TEMA={TEMA}
-        alternarTema={alternarTema}
-      />
+      <Header title="Consulte Já" navigation={navigation} showSobre />
 
-      {/* BOTÃO PROVISÓRIO: Aparece apenas se o banco de dados retornar vazio */}
       {!loading && ubsData.length === 0 && (
         <View style={{ padding: 16, backgroundColor: TEMA.card, margin: 16, borderRadius: 8, alignItems: 'center' }}>
           <Text style={{ color: TEMA.text, marginBottom: 8, textAlign: 'center', fontWeight: 'bold' }}>
@@ -285,7 +274,7 @@ const HomeScreen = ({ navigation, TEMA, alternarTema }) => {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => navigation.navigate('Detalhes', { ubs: item, TEMA })}
+              onPress={() => navigation.navigate('Detalhes', { ubs: item })}
               style={{
                 backgroundColor: TEMA.card,
                 padding: 14,
@@ -307,24 +296,23 @@ const HomeScreen = ({ navigation, TEMA, alternarTema }) => {
 };
 
 /* ----------------------------------------
-   DETALHES (INSERIR, ALTERAR E REMOVER VIA API REST)
+   DETALHES SCREEN
 ---------------------------------------- */
 const DetalhesScreen = ({ route, navigation }) => {
-  const { ubs, TEMA } = route.params;
+  const { ubs } = route.params;
+  const { TEMA } = useContext(ThemeContext);
   const [busca, setBusca] = useState('');
   
-  // Estados do componente
   const [medicamentos, setMedicamentos] = useState(ubs.medicamentos || []);
   const [novoNome, setNovoNome] = useState('');
   const [novaQuantidade, setNovaQuantidade] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const [idEditando, setIdEditando] = useState(null); // null = Adicionando | string = Editando
+  const [idEditando, setIdEditando] = useState(null);
 
   const lista = medicamentos.filter((m) =>
     m.nome.toLowerCase().includes(busca.toLowerCase())
   );
 
-  // Função centralizada para enviar a lista de medicamentos atualizada para o Firebase
   const sincronizarComFirebase = async (novaLista) => {
     const dadosFormatadosParaFirestore = {
       fields: {
@@ -357,7 +345,6 @@ const DetalhesScreen = ({ route, navigation }) => {
     }
   };
 
-  // Salva tanto uma Inserção quanto uma Alteração
   const salvarMedicamento = async () => {
     if (novoNome.trim() === '' || novaQuantidade.trim() === '') {
       alert('Por favor, preencha o nome e a quantidade.');
@@ -368,14 +355,12 @@ const DetalhesScreen = ({ route, navigation }) => {
     let listaAtualizada = [];
 
     if (idEditando) {
-      // MODO EDIÇÃO: Altera o item correspondente dentro do array
       listaAtualizada = medicamentos.map(item => 
         item.id === idEditando 
           ? { ...item, nome: novoNome.trim(), quantidade: parseInt(novaQuantidade) || 0 }
           : item
       );
     } else {
-      // MODO INSERÇÃO: Cria um novo ID e adiciona ao final da lista
       const novoMed = {
         id: 'm_' + Date.now(),
         nome: novoNome.trim(),
@@ -390,7 +375,7 @@ const DetalhesScreen = ({ route, navigation }) => {
       setMedicamentos(listaAtualizada);
       setNovoNome('');
       setNovaQuantidade('');
-      setIdEditando(null); // Sai do modo de edição
+      setIdEditando(null);
       alert(idEditando ? 'Medicamento alterado com sucesso!' : 'Medicamento salvo com sucesso!');
     } else {
       alert('Erro ao sincronizar com o servidor do Firebase.');
@@ -398,9 +383,7 @@ const DetalhesScreen = ({ route, navigation }) => {
     setEnviando(false);
   };
 
-  // Substitua APENAS a função removerMedicamento por esta:
   const removerMedicamento = (idDoMed) => {
-    // Isolamos a lógica de exclusão para ser usada tanto no celular quanto na Web
     const executarExclusao = async () => {
       setEnviando(true);
       const listaFiltrada = medicamentos.filter(item => item.id !== idDoMed);
@@ -408,7 +391,6 @@ const DetalhesScreen = ({ route, navigation }) => {
 
       if (comSucesso) {
         setMedicamentos(listaFiltrada);
-        // Caso o usuário estivesse editando o item removido, limpa o formulário
         if (idEditando === idDoMed) {
           setNovoNome('');
           setNovaQuantidade('');
@@ -421,15 +403,10 @@ const DetalhesScreen = ({ route, navigation }) => {
       setEnviando(false);
     };
 
-    // CORREÇÃO PARA O EXPO SNACK WEB:
     if (Platform.OS === 'web') {
-      // O navegador usa o 'window.confirm' padrão que funciona 100% no Snack
       const resposta = window.confirm("Tem certeza que deseja remover este medicamento do estoque?");
-      if (resposta) {
-        executarExclusao();
-      }
+      if (resposta) executarExclusao();
     } else {
-      // O celular (Android/iOS) usa o Alert nativo perfeitamente
       Alert.alert(
         "Excluir Medicamento",
         "Tem certeza que deseja remover este medicamento do estoque?",
@@ -441,14 +418,12 @@ const DetalhesScreen = ({ route, navigation }) => {
     }
   };
 
-  // Ativa o modo de edição e preenche os campos do formulário
   const iniciarEdicao = (item) => {
     setIdEditando(item.id);
     setNovoNome(item.nome);
     setNovaQuantidade(String(item.quantidade));
   };
 
-  // Cancela a edição em andamento e limpa o formulário
   const cancelarEdicao = () => {
     setIdEditando(null);
     setNovoNome('');
@@ -459,7 +434,6 @@ const DetalhesScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: TEMA.bg }}>
-      {/* Header */}
       <View
         style={{
           backgroundColor: TEMA.card,
@@ -478,7 +452,6 @@ const DetalhesScreen = ({ route, navigation }) => {
         </Text>
       </View>
 
-      {/* Formulário Dinâmico (Adicionar / Editar) */}
       <View style={{ backgroundColor: TEMA.card, padding: 16, margin: 16, borderRadius: 10 }}>
         <Text style={{ color: TEMA.text, fontSize: 16, fontWeight: '700', marginBottom: 8 }}>
           {idEditando ? "✏️ Editar Medicamento" : "+ Adicionar Novo Medicamento"}
@@ -519,7 +492,7 @@ const DetalhesScreen = ({ route, navigation }) => {
           onPress={salvarMedicamento}
           disabled={enviando}
           style={{
-            backgroundColor: enviando ? TEMA.line : idEditando ? '#D97706' : TEMA.accent, // Laranja se for edição, azul se for inserção
+            backgroundColor: enviando ? TEMA.line : idEditando ? '#D97706' : TEMA.accent,
             padding: 12,
             borderRadius: 6,
             alignItems: 'center'
@@ -536,7 +509,6 @@ const DetalhesScreen = ({ route, navigation }) => {
         )}
       </View>
 
-      {/* Campo de Filtro */}
       <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
         <TextInput
           placeholder="Filtrar medicamentos abaixo..."
@@ -555,7 +527,6 @@ const DetalhesScreen = ({ route, navigation }) => {
         <View style={{ height: 1, backgroundColor: TEMA.line }} />
       </View>
 
-      {/* Listagem de Medicamentos com Ações de Editar e Remover */}
       <FlatList
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16 }}
@@ -581,7 +552,6 @@ const DetalhesScreen = ({ route, navigation }) => {
               </Text>
             </View>
 
-            {/* Ícones de Ação */}
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TouchableOpacity 
                 onPress={() => iniciarEdicao(item)} 
@@ -607,10 +577,10 @@ const DetalhesScreen = ({ route, navigation }) => {
 };
 
 /* ----------------------------------------
-   SOBRE
+   SOBRE SCREEN
 ---------------------------------------- */
-const SobreScreen = ({ navigation, route, TEMA: TEMA_PROP }) => {
-  const TEMA = TEMA_PROP || route?.params?.TEMA || temaClaro;
+const SobreScreen = ({ navigation }) => {
+  const { TEMA } = useContext(ThemeContext);
   const pad = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
 
   return (
@@ -648,23 +618,10 @@ const SobreScreen = ({ navigation, route, TEMA: TEMA_PROP }) => {
 };
 
 /* ----------------------------------------
-   NAVEGAÇÃO
+   ARQUITETURA DE NAVEGAÇÃO E APP PRINCIPAL
 ---------------------------------------- */
 const Stack = createStackNavigator();
-const Tab = createBottomTabNavigator();
 
-const HomeStack = ({ TEMA, alternarTema }) => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Home">
-      {(props) => <HomeScreen {...props} TEMA={TEMA} alternarTema={alternarTema} />}
-    </Stack.Screen>
-    <Stack.Screen name="Detalhes" component={DetalhesScreen} />
-  </Stack.Navigator>
-);
-
-/* ----------------------------------------
-   APP PRINCIPAL
----------------------------------------- */
 export default function App() {
   const [temaAtual, setTemaAtual] = useState('escuro');
   const TEMA = temaAtual === 'escuro' ? temaEscuro : temaClaro;
@@ -672,22 +629,17 @@ export default function App() {
   const alternarTema = () => setTemaAtual((t) => (t === 'escuro' ? 'claro' : 'escuro'));
 
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <Tab.Navigator
-          screenOptions={{
-            headerShown: false,
-            tabBarButton: () => null,
-            tabBarStyle: { height: 0 },
-          }}>
-          <Tab.Screen name="Main">
-            {(props) => <HomeStack {...props} TEMA={TEMA} alternarTema={alternarTema} />}
-          </Tab.Screen>
-          <Tab.Screen name="Sobre">
-            {(props) => <SobreScreen {...props} TEMA={TEMA} />}
-          </Tab.Screen>
-        </Tab.Navigator>
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <ThemeContext.Provider value={{ TEMA, alternarTema }}>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          {/* Único Stack gerenciando o fluxo sem renderizações anônimas lentas */}
+          <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Home">
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Detalhes" component={DetalhesScreen} />
+            <Stack.Screen name="Sobre" component={SobreScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </ThemeContext.Provider>
   );
 }

@@ -54,7 +54,7 @@ Na arquitetura ideal de produção do "Consulte Já", o fluxo de dados operaria 
 O projeto está configurado, hospedado e pronto para avaliação imediata através da plataforma **Expo Snack**, dispensando a necessidade de instalar ambientes pesados de desenvolvimento na sua máquina local.
 
 ### 📌 1. Link de Acesso à Plataforma
-👉 **[Clique aqui para abrir o projeto no Expo Snack](https://snack.expo.dev/@martuciigor/app-ubs-estacio?platform=web)**
+👉 **<a href="https://snack.expo.dev/@martuciigor/app-ubs-estacio?platform=web" target="_blank">Clique aqui para abrir o projeto no Expo Snack</a>**
 
 ### 🕹️ 2. Como Interagir e Executar o Aplicativo
 

@@ -25,21 +25,21 @@ const FIREBASE_REST_URL = 'https://firestore.googleapis.com/v1/projects/app-ubs-
    TEMAS
 ---------------------------------------- */
 const temaClaro = {
-  bg: '#F2F4F7',
+  bg: '#F0FDFA',       // Fundo menta/turquesa ultra claro
   card: '#FFFFFF',
-  text: '#1A1A1A',
-  accent: '#0277BD',
-  error: '#D32F2F',
-  line: '#B0BEC5',
+  text: '#042F2E',     // Verde-petróleo quase preto para leitura perfeita
+  line: '#CCFBF1',
+  accent: '#0D9488',   // Turquesa escuro para comandos principais
+  error: '#E11D48',
 };
 
 const temaEscuro = {
-  bg: '#0D1117',
-  card: '#161B22',
-  text: '#E6EDF3',
-  accent: '#4FC3F7',
-  error: '#FF6B6B',
-  line: '#2E3A47',
+  bg: '#040D0E',       // Fundo "abissal" (um cinza escuro com fundo esverdeado)
+  card: '#0F2022',     // Blocos que simulam vidro fumê
+  text: '#E6F4F1',     // Texto claro levemente azulado
+  line: '#1E3A3E',     
+  accent: '#2DD4BF',   // Ciano/Turquesa Neon para dar vida aos botões
+  error: '#FB7185',
 };
 
 /* ----------------------------------------

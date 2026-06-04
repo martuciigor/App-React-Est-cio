@@ -152,7 +152,7 @@ const HomeScreen = ({ navigation }) => {
         const response = await fetch(`${FIREBASE_REST_URL}?documentId=${ubs.id}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(corpoFormatated)
+          body: JSON.stringify(corpoFormatado)
         });
 
         if (!response.ok) {

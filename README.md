@@ -4,7 +4,7 @@ Assista ao vídeo explicativo completo, onde apresento o funcionamento prático 
 
 <div align="center">
   <a href="https://www.youtube.com/watch?v=1NeJnyyKyS0">
-    <img src="https://img.youtube.com/vi/1NeJnyyKyS0/maxresdefault.jpg" alt="Explicação do Código - Clique para Assistir" style="width:100%; max-width:600px;">
+    Explicação do Código - Clique para Assistir
   </a>
 </div>
 
